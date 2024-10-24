@@ -3,12 +3,14 @@ import Link from 'next/link';
 
 import { getNavLinks } from '@/helpers/web-base-helpers';
 
-async function SiteHeader() {
-  let navLinks = await getNavLinks();
+export const cacheGetNavLinks = React.cache(
+  async () => {
+  const data = await getNavLinks();
+  return data;
+  }
+);
 
-  // Only show the first 4 links in the header.
-  navLinks = navLinks.slice(0, 4);
-
+function SiteHeader() {
   return (
     <header className="site-header">
       <Link href="" className="logo">
@@ -16,21 +18,33 @@ async function SiteHeader() {
       </Link>
       <nav>
         <ol className="header-nav-links">
-          {navLinks.map(
-            ({ slug, label, href, type }) => (
-              <li key={slug}>
-                <Link
-                  href={href}
-                  className={`header-nav-link ${type}`}
-                >
-                  {label}
-                </Link>
-              </li>
-            )
-          )}
+          <React.Suspense>
+            <SiteHeaderLinks/>
+          </React.Suspense>
         </ol>
       </nav>
     </header>
+  );
+}
+
+async function SiteHeaderLinks() {
+  let navLinks = await cacheGetNavLinks();
+
+  // Only show the first 4 links in the header.
+  navLinks = navLinks.slice(0, 4);
+  return (
+    navLinks.map(
+      ({ slug, label, href, type }) => (
+        <li key={slug}>
+          <Link
+            href={href}
+            className={`header-nav-link ${type}`}
+          >
+            {label}
+          </Link>
+        </li>
+      )
+    )
   );
 }
 
